@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro LoL Tracker</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: white; margin: 0; padding: 15px; }
+        h2 { text-align: center; color: #38bdf8; margin: 0 0 20px 0; font-size: 22px; text-transform: uppercase; letter-spacing: 1px; }
+        
+        /* Bố cục Grid tự động co giãn */
+        #tracker-container { display: grid; gap: 15px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+        
+        /* Thẻ Tướng */
+        .role-card { background: #1e293b; padding: 15px; border-radius: 12px; border-top: 4px solid #38bdf8; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .role-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .role-title { font-weight: bold; font-size: 16px; color: #f8fafc; }
+        .haste-select { background: #334155; color: #94a3b8; border: none; border-radius: 6px; padding: 4px 8px; font-size: 13px; outline: none; cursor: pointer;}
+        
+        /* Cột Phép Bổ Trợ */
+        .spells-grid { display: flex; gap: 15px; justify-content: space-around; }
+        .spell-block { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 45%; }
+        
+        .spell-select { width: 100%; padding: 6px; background: #0f172a; color: #cbd5e1; border: 1px solid #475569; border-radius: 6px; font-size: 12px; text-align: center; outline: none; cursor: pointer; }
+        
+        /* Icon và Overlay Đếm Ngược */
+        .icon-container { position: relative; width: 60px; height: 60px; cursor: pointer; border-radius: 8px; overflow: hidden; border: 2px solid transparent; transition: border-color 0.2s; }
+        .icon-container:hover { border-color: #38bdf8; }
+        .spell-icon { width: 100%; height: 100%; object-fit: cover; background: #0f172a; }
+        
+        .timer-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.75); color: #facc15; display: none; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; backdrop-filter: blur(2px); }
+        
+        /* Trạng thái đang đếm ngược */
+        .on-cooldown { cursor: not-allowed; border-color: #e11d48 !important; }
+    </style>
+</head>
+<body>
+
+    <h2>LoL Cooldown Tracker</h2>
+    <div id="loading" style="text-align: center; color: #facc15; padding: 20px;">Đang tải dữ liệu từ máy chủ Riot...</div>
+    <div id="tracker-container"></div>
+
+    <script>
+        const roles = ['Top (Đường Trên)', 'Jungle (Rừng)', 'Mid (Đường Giữa)', 'ADC (Xạ Thủ)', 'Support (Hỗ Trợ)'];
+        let spellsData = {};
+        let latestPatch = "";
+
+        // 1. Tải dữ liệu từ Data Dragon
+        async function fetchRiotData() {
+            try {
+                const versionRes = await fetch('https://ddragon.leagueoflegends.com/api/versions.json');
+                const versions = await versionRes.json();
+                latestPatch = versions[0]; 
+
+                const spellsRes = await fetch(`https://ddragon.leagueoflegends.com/cdn/${latestPatch}/data/en_US/summoner.json`);
+                const spellsJson = await spellsRes.json();
+                
+                const rawSpells = spellsJson.data;
+                for (let key in rawSpells) {
+                    if (rawSpells[key].modes.includes('CLASSIC')) {
+                        spellsData[key] = {
+                            id: rawSpells[key].id,
+                            name: rawSpells[key].name,
+                            cooldown: rawSpells[key].cooldown[0] 
+                        };
+                    }
+                }
+                document.getElementById('loading').style.display = 'none';
+                renderUI();
+            } catch (error) {
+                document.getElementById('loading').innerText = "Lỗi kết nối mạng! Không thể tải dữ liệu Riot Games.";
+                console.error(error);
+            }
+        }
+
+        // 2. Vẽ giao diện cho 5 người
+        function renderUI() {
+            const container = document.getElementById('tracker-container');
+            
+            let optionsHTML = '<option value="">-- Chọn phép --</option>';
+            for (let key in spellsData) {
+                optionsHTML += `<option value="${key}">${spellsData[key].name}</option>`;
+            }
+
+            roles.forEach((role, index) => {
+                const roleHTML = `
+                    <div class="role-card">
+                        <div class="role-header">
+                            <span class="role-title">${role}</span>
+                            <select id="haste-${index}" class="haste-select">
+                                <option value="0">Haste: 0</option>
+                                <option value="12">Giày (+12)</option>
+                                <option value="18">Ngọc (+18)</option>
+                                <option value="30">Giày+Ngọc (+30)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="spells-grid">
+                            <div class="spell-block">
+                                <select id="select-1-${index}" class="spell-select" onchange="updateSpell(${index}, 1)">${optionsHTML}</select>
+                                <div id="icon-container-1-${index}" class="icon-container" onclick="startCooldown(${index}, 1)">
+                                    <img id="img-1-${index}" class="spell-icon" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=">
+                                    <div id="overlay-1-${index}" class="timer-overlay"></div>
+                                </div>
+                            </div>
+
+                            <div class="spell-block">
+                                <select id="select-2-${index}" class="spell-select" onchange="updateSpell(${index}, 2)">${optionsHTML}</select>
+                                <div id="icon-container-2-${index}" class="icon-container" onclick="startCooldown(${index}, 2)">
+                                    <img id="img-2-${index}" class="spell-icon" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=">
+                                    <div id="overlay-2-${index}" class="timer-overlay"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', roleHTML);
+            });
+        }
+
+        // 3. Cập nhật Icon khi thay đổi phép
+        function updateSpell(roleIndex, spellSlot) {
+            const selectElement = document.getElementById(`select-${spellSlot}-${roleIndex}`);
+            const imgElement = document.getElementById(`img-${spellSlot}-${roleIndex}`);
+            const spellKey = selectElement.value;
+
+            if (spellKey) {
+                imgElement.src = `https://ddragon.leagueoflegends.com/cdn/${latestPatch}/img/spell/${spellsData[spellKey].id}.png`;
+            } else {
+                // Trả về ảnh rỗng nếu không chọn phép
+                imgElement.src = "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=";
+            }
+        }
+
+        // 4. Xử lý logic đếm ngược khi click vào ảnh
+        function startCooldown(roleIndex, spellSlot) {
+            const selectElement = document.getElementById(`select-${spellSlot}-${roleIndex}`);
+            const iconContainer = document.getElementById(`icon-container-${spellSlot}-${roleIndex}`);
+            const overlay = document.getElementById(`overlay-${spellSlot}-${roleIndex}`);
+            const hasteElement = document.getElementById(`haste-${roleIndex}`);
+            
+            const spellKey = selectElement.value;
+            
+            // Chặn click nếu chưa chọn phép hoặc đang trong thời gian hồi
+            if (!spellKey || iconContainer.classList.contains('on-cooldown')) return;
+
+            const baseCooldown = spellsData[spellKey].cooldown;
+            const haste = parseInt(hasteElement.value);
+            
+            // Công thức: Actual Cooldown = Base Cooldown * (100 / (100 + Haste))
+            let timeLeft = Math.round(baseCooldown * (100 / (100 + haste)));
+
+            // Bật hiệu ứng đang đếm ngược
+            iconContainer.classList.add('on-cooldown');
+            selectElement.disabled = true;
+            overlay.style.display = 'flex';
+            overlay.innerText = timeLeft;
+
+            const interval = setInterval(() => {
+                timeLeft--;
+                overlay.innerText = timeLeft;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(interval);
+                    // Reset lại giao diện sau khi hồi xong
+                    overlay.style.display = 'none';
+                    iconContainer.classList.remove('on-cooldown');
+                    selectElement.disabled = false;
+                }
+            }, 1000);
+        }
+
+        // Khởi động app
+        fetchRiotData();
+    </script>
+</body>
+</html>
