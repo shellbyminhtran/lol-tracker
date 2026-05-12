@@ -7,11 +7,15 @@ ________________________________________
 ✨ Tính năng
 
 ●	Dữ liệu thực: Tự động lấy cooldown chuẩn từ Riot Data Dragon.
+
 ●	Haste thông minh: Tính toán thời gian hồi thực tế dựa trên Giày Ionia và Ngọc Thấu Thị.
+
 ●	Đa nền tảng: Chạy như phần mềm Desktop (.exe) hoặc Web App trên iPhone/Android.
+
 ●	Reset nhanh: Cơ chế hủy đếm ngược ẩn ngay trên icon để sửa lỗi thao tác nhầm.
 
 📥 Hướng dẫn cài đặt
+
 💻 Trên Máy tính (Windows)
 1.	Đảm bảo máy đã cài Node.js.
 2.	Mở Terminal tại thư mục dự án và chạy lệnh npm install để cài đặt thư viện.
@@ -44,6 +48,7 @@ A cross-platform application for professional League of Legends summoner spell t
 ●	Quick Reset: Hidden cancel mechanism directly on icons to fix misclicks.
 
 📥 Installation Guide
+
 💻 For Desktop (Windows)
 1.	Ensure Node.js is installed on your system.
 2.	Open Terminal in the project directory and run npm install.
