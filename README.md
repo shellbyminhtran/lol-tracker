@@ -5,6 +5,7 @@ ________________________________________
 Ứng dụng đa nền tảng giúp theo dõi thời gian hồi phép bổ trợ đối thủ một cách chuyên nghiệp.
 
 ✨ Tính năng
+
 ●	Dữ liệu thực: Tự động lấy cooldown chuẩn từ Riot Data Dragon.
 ●	Haste thông minh: Tính toán thời gian hồi thực tế dựa trên Giày Ionia và Ngọc Thấu Thị.
 ●	Đa nền tảng: Chạy như phần mềm Desktop (.exe) hoặc Web App trên iPhone/Android.
@@ -33,6 +34,7 @@ ________________________________________
 A cross-platform application for professional League of Legends summoner spell tracking.
 
 ✨ Key Features
+
 ●	Live Data: Fetches standard cooldowns directly from Riot Data Dragon.
 ●	Smart Haste: Calculates actual cooldowns based on Ionian Boots and Cosmic Insight.
 ●	Cross-platform: Runs as a Desktop software (.exe) or a Web App on iPhone/Android.
