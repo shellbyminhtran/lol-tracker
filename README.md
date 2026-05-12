@@ -36,8 +36,11 @@ A cross-platform application for professional League of Legends summoner spell t
 ✨ Key Features
 
 ●	Live Data: Fetches standard cooldowns directly from Riot Data Dragon.
+
 ●	Smart Haste: Calculates actual cooldowns based on Ionian Boots and Cosmic Insight.
+
 ●	Cross-platform: Runs as a Desktop software (.exe) or a Web App on iPhone/Android.
+
 ●	Quick Reset: Hidden cancel mechanism directly on icons to fix misclicks.
 
 📥 Installation Guide
