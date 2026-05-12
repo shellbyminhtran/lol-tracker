@@ -4,7 +4,7 @@
 ================================================================================
 
 Chuc mung ban da so huu phan mem ho tro tinh toan thoi gian hoi chieu (Cooldown)
-danh rieng cho Lien Minh Huyet Thoai. Day la cong cu thuc chien giup ban kiem
+danh rieng cho Lien Minh Huyen Thoai. Day la cong cu thuc chien giup ban kiem
 soat tran dau tot hon.
 
 1. YEU CAU HE THONG (Doi voi nha phat trien)
