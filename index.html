@@ -9,30 +9,26 @@
         body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: white; margin: 0; padding: 15px; }
         h2 { text-align: center; color: #38bdf8; margin: 0 0 20px 0; font-size: 22px; text-transform: uppercase; letter-spacing: 1px; }
         
-        /* Bố cục Grid tự động co giãn */
         #tracker-container { display: grid; gap: 15px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
         
-        /* Thẻ Tướng */
         .role-card { background: #1e293b; padding: 15px; border-radius: 12px; border-top: 4px solid #38bdf8; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
         .role-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
         .role-title { font-weight: bold; font-size: 16px; color: #f8fafc; }
         .haste-select { background: #334155; color: #94a3b8; border: none; border-radius: 6px; padding: 4px 8px; font-size: 13px; outline: none; cursor: pointer;}
         
-        /* Cột Phép Bổ Trợ */
         .spells-grid { display: flex; gap: 15px; justify-content: space-around; }
         .spell-block { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 45%; }
         
         .spell-select { width: 100%; padding: 6px; background: #0f172a; color: #cbd5e1; border: 1px solid #475569; border-radius: 6px; font-size: 12px; text-align: center; outline: none; cursor: pointer; }
         
-        /* Icon và Overlay Đếm Ngược */
         .icon-container { position: relative; width: 60px; height: 60px; cursor: pointer; border-radius: 8px; overflow: hidden; border: 2px solid transparent; transition: border-color 0.2s; }
-        .icon-container:hover { border-color: #38bdf8; }
+        .icon-container:hover { border-color: #e11d48; } /* Đổi viền đỏ khi di chuột vào để báo hiệu có thể hủy */
         .spell-icon { width: 100%; height: 100%; object-fit: cover; background: #0f172a; }
         
         .timer-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.75); color: #facc15; display: none; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; backdrop-filter: blur(2px); }
         
         /* Trạng thái đang đếm ngược */
-        .on-cooldown { cursor: not-allowed; border-color: #e11d48 !important; }
+        .on-cooldown { border-color: #e11d48 !important; }
     </style>
 </head>
 <body>
@@ -45,8 +41,10 @@
         const roles = ['Top (Đường Trên)', 'Jungle (Rừng)', 'Mid (Đường Giữa)', 'ADC (Xạ Thủ)', 'Support (Hỗ Trợ)'];
         let spellsData = {};
         let latestPatch = "";
+        
+        // BIẾN MỚI: Khai báo một cuốn sổ ghi chép để lưu các đồng hồ đang chạy
+        let activeTimers = {};
 
-        // 1. Tải dữ liệu từ Data Dragon
         async function fetchRiotData() {
             try {
                 const versionRes = await fetch('https://ddragon.leagueoflegends.com/api/versions.json');
@@ -74,7 +72,6 @@
             }
         }
 
-        // 2. Vẽ giao diện cho 5 người
         function renderUI() {
             const container = document.getElementById('tracker-container');
             
@@ -99,7 +96,7 @@
                         <div class="spells-grid">
                             <div class="spell-block">
                                 <select id="select-1-${index}" class="spell-select" onchange="updateSpell(${index}, 1)">${optionsHTML}</select>
-                                <div id="icon-container-1-${index}" class="icon-container" onclick="startCooldown(${index}, 1)">
+                                <div id="icon-container-1-${index}" class="icon-container" title="Bấm lần nữa để Hủy đếm ngược" onclick="startCooldown(${index}, 1)">
                                     <img id="img-1-${index}" class="spell-icon" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=">
                                     <div id="overlay-1-${index}" class="timer-overlay"></div>
                                 </div>
@@ -107,7 +104,7 @@
 
                             <div class="spell-block">
                                 <select id="select-2-${index}" class="spell-select" onchange="updateSpell(${index}, 2)">${optionsHTML}</select>
-                                <div id="icon-container-2-${index}" class="icon-container" onclick="startCooldown(${index}, 2)">
+                                <div id="icon-container-2-${index}" class="icon-container" title="Bấm lần nữa để Hủy đếm ngược" onclick="startCooldown(${index}, 2)">
                                     <img id="img-2-${index}" class="spell-icon" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=">
                                     <div id="overlay-2-${index}" class="timer-overlay"></div>
                                 </div>
@@ -119,7 +116,6 @@
             });
         }
 
-        // 3. Cập nhật Icon khi thay đổi phép
         function updateSpell(roleIndex, spellSlot) {
             const selectElement = document.getElementById(`select-${spellSlot}-${roleIndex}`);
             const imgElement = document.getElementById(`img-${spellSlot}-${roleIndex}`);
@@ -128,12 +124,10 @@
             if (spellKey) {
                 imgElement.src = `https://ddragon.leagueoflegends.com/cdn/${latestPatch}/img/spell/${spellsData[spellKey].id}.png`;
             } else {
-                // Trả về ảnh rỗng nếu không chọn phép
                 imgElement.src = "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=";
             }
         }
 
-        // 4. Xử lý logic đếm ngược khi click vào ảnh
         function startCooldown(roleIndex, spellSlot) {
             const selectElement = document.getElementById(`select-${spellSlot}-${roleIndex}`);
             const iconContainer = document.getElementById(`icon-container-${spellSlot}-${roleIndex}`);
@@ -141,14 +135,26 @@
             const hasteElement = document.getElementById(`haste-${roleIndex}`);
             
             const spellKey = selectElement.value;
+            const timerID = `${spellSlot}-${roleIndex}`; // Tạo mã ID riêng cho từng ô phép
             
-            // Chặn click nếu chưa chọn phép hoặc đang trong thời gian hồi
-            if (!spellKey || iconContainer.classList.contains('on-cooldown')) return;
+            // TÍNH NĂNG RESET: Nếu ảnh đang trong trạng thái đếm ngược mà bị click
+            if (iconContainer.classList.contains('on-cooldown')) {
+                clearInterval(activeTimers[timerID]); // Xóa bỏ đồng hồ đang chạy ngầm
+                delete activeTimers[timerID];         // Xóa khỏi sổ ghi chép
+                
+                // Trả giao diện về trạng thái bình thường
+                overlay.style.display = 'none';
+                iconContainer.classList.remove('on-cooldown');
+                selectElement.disabled = false;
+                return; // Dừng hàm tại đây, không đếm ngược nữa
+            }
+
+            // Nếu chưa chọn phép thì không làm gì cả
+            if (!spellKey) return;
 
             const baseCooldown = spellsData[spellKey].cooldown;
             const haste = parseInt(hasteElement.value);
             
-            // Công thức: Actual Cooldown = Base Cooldown * (100 / (100 + Haste))
             let timeLeft = Math.round(baseCooldown * (100 / (100 + haste)));
 
             // Bật hiệu ứng đang đếm ngược
@@ -157,12 +163,15 @@
             overlay.style.display = 'flex';
             overlay.innerText = timeLeft;
 
-            const interval = setInterval(() => {
+            // Bắt đầu đếm và lưu lại ID vào sổ ghi chép để lỡ có bấm hủy thì lấy ra xóa
+            activeTimers[timerID] = setInterval(() => {
                 timeLeft--;
                 overlay.innerText = timeLeft;
                 
                 if (timeLeft <= 0) {
-                    clearInterval(interval);
+                    clearInterval(activeTimers[timerID]);
+                    delete activeTimers[timerID];
+                    
                     // Reset lại giao diện sau khi hồi xong
                     overlay.style.display = 'none';
                     iconContainer.classList.remove('on-cooldown');
@@ -171,7 +180,6 @@
             }, 1000);
         }
 
-        // Khởi động app
         fetchRiotData();
     </script>
 </body>
